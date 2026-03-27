@@ -1,7 +1,8 @@
 services:
   web:
     build:
-      context: ./django 
+      context: ./django
+      dockerfile: Dockerfile
     container_name: django_app 
     command: python manage.py runserver 0.0.0.0:8000 
     volumes:
@@ -10,12 +11,6 @@ services:
       - .env 
     ports:
       - "8000:8000"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
     depends_on:
       - db 
 
