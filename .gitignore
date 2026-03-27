@@ -14,9 +14,6 @@ db.sqlite3
 staticfiles/
 media/
 
-# Environment variables
-.env
-
 # IDE
 .vscode/
 .idea/
