@@ -1,0 +1,47 @@
+services:
+  web:
+    build:
+      context: ./django 
+    container_name: django_app 
+    command: python manage.py runserver 0.0.0.0:8000 
+    volumes:
+      - ./django:/app 
+    env_file:
+      - .env 
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    depends_on:
+      - db 
+
+  db:
+    image: postgres:14 
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    env_file:
+      - .env 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data 
+    ports:
+      - "5432:5432"
+
+  nginx:
+    image: nginx:latest 
+    container_name: nginx 
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d 
+    depends_on:
+      - web 
+
+volumes:
+  postgres_data: 
