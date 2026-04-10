@@ -41,3 +41,6 @@ postgres_data/
 # Git
 *.swp
 .terraform
+
+*.tfstate
+*.tfstate.backup
