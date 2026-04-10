@@ -1,7 +1,7 @@
 # Підключаємо модуль для S3 та DynamoDB
 module "s3_backend" {
   source      = "./modules/s3-backend"           # Шлях до модуля
-  bucket_name = "terraform-state-bucket-dk-lesson-5"  # Ім'я S3-бакета
+  bucket_name = "terraform-state-bucket-dk-lesson-7"  # Ім'я S3-бакета
   table_name  = "terraform-locks"                # Ім'я DynamoDB
 }
 
@@ -18,7 +18,7 @@ module "vpc" {
 # Підключаємо модуль ECR
 module "ecr" {
   source       = "./modules/ecr"
-  ecr_name     = "lesson-5-ecr"
+  ecr_name     = "lesson-7-ecr"
   scan_on_push = true
 }
 
