@@ -48,4 +48,38 @@ output "ecr_repository_name" {
   value       = module.ecr.repository_name
 }
 
+output "eks_cluster_name" {
+  description = "Назва EKS-кластера"
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "API endpoint EKS-кластера"
+  value       = module.eks.cluster_endpoint
+}
+
+output "eks_cluster_oidc_issuer" {
+  description = "OIDC issuer URL для EKS-кластера"
+  value       = module.eks.cluster_oidc_issuer
+}
+
+output "eks_node_role_arn" {
+  description = "ARN IAM-ролі для EKS worker nodes"
+  value       = module.eks.node_role_arn
+}
+
+output "kubectl_config_command" {
+  description = "Команда для налаштування kubectl"
+  value       = "aws eks update-kubeconfig --region eu-north-1 --name ${module.eks.cluster_name}"
+}
+
+output "ecr_push_commands" {
+  description = "Команди для логіну в ECR і пушу Docker-образу"
+  value = {
+    login = "aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${module.ecr.repository_url}"
+    tag   = "docker tag django-app:latest ${module.ecr.repository_url}:latest"
+    push  = "docker push ${module.ecr.repository_url}:latest"
+  }
+}
+
 
