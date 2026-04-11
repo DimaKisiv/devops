@@ -15,13 +15,9 @@
 
 ```text
 lesson-7/
-├── .terraform.lock.hcl
 ├── backend.tf
 ├── main.tf
 ├── outputs.tf
-├── README.md
-├── terraform.tfstate
-├── terraform.tfstate.backup
 ├── charts/
 │   └── django-app/
 │       ├── Chart.yaml
