@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: 123456789012.dkr.ecr.eu-north-1.amazonaws.com/lesson-7-ecr
+  repository: 123456789012.dkr.ecr.eu-north-1.amazonaws.com/lesson-8-9-ecr
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -13,11 +13,15 @@ service:
   targetPort: 8000
 
 config:
-  DJANGO_SETTINGS_MODULE: config.settings
+  DJANGO_SETTINGS_MODULE: goit.settings
   DEBUG: "False"
   SECRET_KEY: replace-me
   ALLOWED_HOSTS: "*"
-  DATABASE_URL: postgres://user:password@db:5432/app
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: django_user
+  POSTGRES_PASSWORD: change_me
+  POSTGRES_DB: django_db
 
 resources:
   requests:

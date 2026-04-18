@@ -1,0 +1,86 @@
+pipeline {
+  agent {
+    label 'kaniko'
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    IMAGE_TAG = ""
+  }
+
+  stages {
+    stage('Checkout application source') {
+      steps {
+        container('git') {
+          checkout scm
+          script {
+            env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+          }
+        }
+      }
+    }
+
+    stage('Build and push image to ECR') {
+      steps {
+        container('kaniko') {
+          withCredentials([
+            usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+          ]) {
+            sh '''#!/busybox/sh
+              set -eu
+              export AWS_DEFAULT_REGION="${AWS_REGION}"
+              export AWS_REGION="${AWS_REGION}"
+              export AWS_SDK_LOAD_CONFIG=true
+
+              /kaniko/executor \
+                --context "${WORKSPACE}/${APP_CONTEXT_PATH}" \
+                --dockerfile "${WORKSPACE}/${APP_CONTEXT_PATH}/Dockerfile" \
+                --destination "${ECR_REPOSITORY}:${IMAGE_TAG}" \
+                --destination "${ECR_REPOSITORY}:latest" \
+                --cache=true
+            '''
+          }
+        }
+      }
+    }
+
+    stage('Update GitOps Helm values') {
+      steps {
+        container('git') {
+          withCredentials([
+            usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN'),
+            string(credentialsId: 'github-email', variable: 'GIT_EMAIL')
+          ]) {
+            sh '''#!/bin/sh
+              set -eu
+
+              CLEAN_URL="${GITOPS_REPO_URL#https://}"
+              rm -rf gitops-repo
+              git clone "https://${GIT_USERNAME}:${GIT_TOKEN}@${CLEAN_URL}" gitops-repo
+
+              sed -i "s|^  repository:.*|  repository: ${ECR_REPOSITORY}|" "gitops-repo/${HELM_VALUES_FILE}"
+              sed -i "s|^  tag:.*|  tag: ${IMAGE_TAG}|" "gitops-repo/${HELM_VALUES_FILE}"
+
+              cd gitops-repo
+              git config user.name "${GIT_USERNAME}"
+              git config user.email "${GIT_EMAIL}"
+              git add "${HELM_VALUES_FILE}"
+
+              if git diff --cached --quiet; then
+                echo "No GitOps changes detected"
+                exit 0
+              fi
+
+              git commit -m "ci: update django image tag to ${IMAGE_TAG}"
+              git push origin HEAD:${GIT_BRANCH}
+            '''
+          }
+        }
+      }
+    }
+  }
+}
