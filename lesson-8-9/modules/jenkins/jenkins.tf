@@ -1,37 +1,77 @@
-resource "kubernetes_namespace_v1" "this" {
-  metadata {
-    name = var.namespace
+data "aws_iam_policy_document" "jenkins_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:${var.namespace}:${var.service_account_name}"]
+    }
   }
 }
 
-resource "helm_release" "this" {
-  name             = "jenkins"
+data "aws_iam_policy_document" "jenkins_ecr" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:GetAuthorizationToken",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeRepositories",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [var.ecr_repository_arn]
+  }
+}
+
+resource "aws_iam_role" "jenkins" {
+  name               = "${var.cluster_name}-${var.name}-irsa-role"
+  assume_role_policy = data.aws_iam_policy_document.jenkins_assume_role.json
+}
+
+resource "aws_iam_policy" "jenkins_ecr" {
+  name   = "${var.cluster_name}-${var.name}-ecr-policy"
+  policy = data.aws_iam_policy_document.jenkins_ecr.json
+}
+
+resource "aws_iam_role_policy_attachment" "jenkins_ecr" {
+  role       = aws_iam_role.jenkins.name
+  policy_arn = aws_iam_policy.jenkins_ecr.arn
+}
+
+resource "helm_release" "jenkins" {
+  name             = var.name
+  namespace        = var.namespace
   repository       = "https://charts.jenkins.io"
   chart            = "jenkins"
   version          = var.chart_version
-  namespace        = kubernetes_namespace_v1.this.metadata[0].name
-  create_namespace = false
-  timeout          = 1200
+  create_namespace = true
 
   values = [
     templatefile("${path.module}/values.yaml", {
-      namespace             = var.namespace
-      admin_username        = var.admin_username
-      admin_password        = var.admin_password
-      github_username       = var.github_username
-      github_email          = var.github_email
-      github_token          = var.github_token
-      aws_access_key_id     = var.aws_access_key_id
-      aws_secret_access_key = var.aws_secret_access_key
-      aws_region            = var.aws_region
-      app_repo_url          = var.app_repo_url
-      gitops_repo_url       = var.gitops_repo_url
-      git_branch            = var.git_branch
-      ecr_repository_url    = var.ecr_repository_url
-      app_context_path      = var.app_context_path
-      helm_values_file      = var.helm_values_file
+      admin_username       = var.admin_username
+      admin_password       = var.admin_password
+      service_account_name = var.service_account_name
+      irsa_role_arn        = aws_iam_role.jenkins.arn
+      ecr_repository_url   = var.ecr_repository_url
     })
   ]
 
-  depends_on = [kubernetes_namespace_v1.this]
+  depends_on = [aws_iam_role_policy_attachment.jenkins_ecr]
 }

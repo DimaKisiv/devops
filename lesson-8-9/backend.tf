@@ -1,30 +1,22 @@
 terraform {
-  required_version = ">= 1.6.0"
+	required_version = ">= 1.5.0"
 
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.30"
-    }
-
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.13"
-    }
-  }
-
-  # Після першого створення bucket/table розкоментуйте backend нижче,
-  # підставте свої значення та виконайте terraform init -reconfigure.
-  # backend "s3" {
-  #   bucket         = "terraform-state-bucket-dk-lesson-8-9"
-  #   key            = "lesson-8-9/terraform.tfstate"
-  #   region         = "eu-north-1"
-  #   dynamodb_table = "terraform-locks-lesson-8-9"
-  #   encrypt        = true
-  # }
+	required_providers {
+		aws = {
+			source  = "hashicorp/aws"
+			version = ">= 5.0"
+		}
+		helm = {
+			source  = "hashicorp/helm"
+			version = ">= 2.12.0"
+		}
+	}
+	
+	backend "s3" {
+		bucket         = "terraform-state-bucket-dk-7" # Назва S3-бакета
+		key            = "lesson-7/terraform.tfstate"   # Шлях до файлу стейту
+		region         = "eu-north-1"                    # Регіон AWS
+		dynamodb_table = "terraform-locks"              # Назва таблиці DynamoDB для блокування
+		encrypt        = true                           # Шифрування файлу стейту
+	}
 }

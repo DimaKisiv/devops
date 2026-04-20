@@ -1,51 +1,33 @@
 # lesson-8-9
 
-Повний CI/CD-процес для Django-застосунку з використанням Terraform, Jenkins, Kaniko, Amazon ECR, Helm та Argo CD.
+Домашнє завдання з повним CI/CD-процесом для Django-застосунку на базі Terraform, EKS, ECR, Helm, Jenkins і Argo CD.
 
 ## Що реалізовано
 
-- Terraform-модулі для `S3 + DynamoDB`, `VPC`, `ECR`, `EKS`, `Jenkins`, `Argo CD`
-- Jenkins, встановлений через Helm у Kubernetes
-- Jenkins pipeline через `Jenkinsfile`, який:
-  - забирає код застосунку з Git
-  - збирає Docker image з [lesson-8-9/django/Dockerfile](d:\Study\Neoversity\DevOps\lesson-8-9\django\Dockerfile)
-  - пушить image в Amazon ECR через Kaniko
-  - оновлює `lesson-8-9/charts/django-app/values.yaml` у GitOps-репозиторії
-- Argo CD, встановлений через Helm у Kubernetes
-- Argo CD Application, яка стежить за Helm chart і автоматично синхронізує зміни
+- Terraform-модулі для `S3 + DynamoDB`, `VPC`, `ECR`, `EKS`
+- Додавання `AWS EBS CSI Driver` для PVC у EKS
+- Встановлення `Jenkins` через `Helm` із Terraform
+- Встановлення `Argo CD` через `Helm` із Terraform
+- Власний Helm chart для Django-застосунку
+- Jenkins pipeline через Kubernetes agent (`Kaniko + Git`)
+- GitOps-ланцюг `Jenkins -> ECR -> Helm values -> Argo CD sync`
 
-## CI/CD схема
+## Архітектура
 
-```text
-Git push -> Jenkins -> Kaniko build -> Amazon ECR -> update values.yaml in GitOps repo -> Argo CD sync -> EKS deploy
-```
+1. Terraform створює `VPC`, `EKS`, `ECR`, `OIDC/IRSA`, `Jenkins` і `Argo CD`.
+2. Jenkins запускає pipeline в Kubernetes pod.
+3. Kaniko збирає Docker-образ із [django/Dockerfile](d:/Study/Neoversity/DevOps/lesson-8-9/django/Dockerfile) і пушить його в ECR.
+4. Jenkins оновлює тег образу в [charts/django-app/values.yaml](d:/Study/Neoversity/DevOps/lesson-8-9/charts/django-app/values.yaml) і пушить зміни в Git.
+5. Argo CD відстежує Git-репозиторій і автоматично синхронізує застосунок у кластері.
 
-## Важливий момент про Docker image
-
-У цьому рішенні локально збирати image через Docker Desktop не потрібно.
-
-- Джерело застосунку: `lesson-8-9/django`
-- Jenkins сам виконує build у Kubernetes agent
-- Kaniko пушить image напряму в ECR
-- Argo CD підтягує новий tag через зміни в GitOps-репозиторії
-
-Локальний Docker може знадобитися лише для ручної перевірки, але не для основного CI/CD процесу.
-
-## Структура
+## Структура проєкту
 
 ```text
 lesson-8-9/
 ├── backend.tf
 ├── main.tf
 ├── outputs.tf
-├── variables.tf
-├── terraform.tfvars.example
 ├── Jenkinsfile
-├── django/
-│   ├── Dockerfile
-│   ├── manage.py
-│   ├── requirements.txt
-│   └── goit/
 ├── charts/
 │   └── django-app/
 │       ├── Chart.yaml
@@ -54,17 +36,23 @@ lesson-8-9/
 │           ├── configmap.yaml
 │           ├── deployment.yaml
 │           ├── hpa.yaml
+│           ├── ingress.yaml
 │           └── service.yaml
+├── django/
+│   ├── Dockerfile
+│   ├── manage.py
+│   ├── requirements.txt
+│   └── goit/
 └── modules/
-    ├── s3-backend/
-    ├── vpc/
+    ├── argo_cd/
     ├── ecr/
     ├── eks/
     ├── jenkins/
-    └── argo_cd/
+    ├── s3-backend/
+    └── vpc/
 ```
 
-## Передумови
+## Перед запуском
 
 Потрібно мати встановлені:
 
@@ -72,118 +60,126 @@ lesson-8-9/
 - `AWS CLI`
 - `kubectl`
 - `Helm`
+- доступ до AWS-акаунта з правами на `EKS`, `ECR`, `IAM`, `EC2`, `S3`, `DynamoDB`
 
-Також потрібні:
+Налаштування AWS CLI:
 
-- GitHub repository з кодом застосунку та `lesson-8-9/Jenkinsfile`
-- окремий GitOps repository або той самий repository, якщо ти хочеш спростити демо
-- GitHub token з правами на clone/push
-- AWS access key для push в ECR
+```powershell
+aws configure
+```
+
+## Важливі місця для заповнення
+
+Перед `terraform apply` замініть плейсхолдери:
+
+- `repo_url` у [modules/argo_cd/variables.tf](d:/Study/Neoversity/DevOps/lesson-8-9/modules/argo_cd/variables.tf) на ваш GitHub-репозиторій із гілкою `lesson-8-9`
+- `repo_target_revision` у [modules/argo_cd/variables.tf](d:/Study/Neoversity/DevOps/lesson-8-9/modules/argo_cd/variables.tf) на потрібну гілку
+- `image.repository` у [charts/django-app/values.yaml](d:/Study/Neoversity/DevOps/lesson-8-9/charts/django-app/values.yaml) на фактичний `ecr_repository_url` із Terraform outputs
+- `ECR_REGISTRY` і `GITOPS_REPOSITORY` у [Jenkinsfile](d:/Study/Neoversity/DevOps/lesson-8-9/Jenkinsfile) на ваші значення
 
 ## Як застосувати Terraform
 
-1. Скопіюй `terraform.tfvars.example` у `terraform.tfvars` і заповни свої значення.
-
-2. Ініціалізуй Terraform:
-
 ```powershell
-cd .\lesson-8-9
 terraform init
 terraform validate
-```
-
-3. Створи інфраструктуру:
-
-```powershell
 terraform apply
 ```
 
-4. Налаштуй kubeconfig:
+Після `apply` будуть створені:
+
+- `EKS` кластер і node group
+- `OIDC provider` для `IRSA`
+- `AWS EBS CSI Driver`
+- `ECR` repository
+- `Jenkins` у namespace `jenkins`
+- `Argo CD` у namespace `argocd`
+
+## Jenkins
+
+Pipeline описаний у [Jenkinsfile](d:/Study/Neoversity/DevOps/lesson-8-9/Jenkinsfile).
+
+Що робить pipeline:
+
+1. Забирає код репозиторію.
+2. Збирає Docker-образ через `Kaniko`.
+3. Пушить образ у `Amazon ECR`.
+4. Оновлює `charts/django-app/values.yaml` новим тегом образу.
+5. Комітить і пушить зміну в Git.
+
+Для роботи Jenkins job потрібно створити credentials:
+
+- `github-token` типу `Username with password`
+  - username: ваш GitHub username
+  - password: ваш GitHub PAT
+
+Як перевірити Jenkins job:
+
+1. Отримайте зовнішній endpoint Jenkins через `kubectl get svc -n jenkins`.
+2. Увійдіть із логіном `admin` і паролем із Terraform output `jenkins_admin_password`.
+3. Створіть pipeline job, що використовує [Jenkinsfile](d:/Study/Neoversity/DevOps/lesson-8-9/Jenkinsfile).
+4. Запустіть build і перевірте, що з’явився новий тег у `ECR` і коміт у Git.
+
+## Argo CD
+
+Argo CD встановлюється з модуля [modules/argo_cd](d:/Study/Neoversity/DevOps/lesson-8-9/modules/argo_cd).
+
+Argo CD Application створюється локальним chart-ом у:
+
+- [modules/argo_cd/charts/Chart.yaml](d:/Study/Neoversity/DevOps/lesson-8-9/modules/argo_cd/charts/Chart.yaml)
+- [modules/argo_cd/charts/templates/application.yaml](d:/Study/Neoversity/DevOps/lesson-8-9/modules/argo_cd/charts/templates/application.yaml)
+- [modules/argo_cd/charts/templates/repository.yaml](d:/Study/Neoversity/DevOps/lesson-8-9/modules/argo_cd/charts/templates/repository.yaml)
+
+Як побачити результат в Argo CD:
+
+1. Отримайте пароль:
 
 ```powershell
-aws eks update-kubeconfig --region eu-north-1 --name lesson-8-9-eks
-kubectl get nodes
+kubectl -n argocd get secret argo-cd-initial-admin-secret -o jsonpath="{.data.password}" | % { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
 ```
 
-5. За потреби переведи state у S3 backend:
-
-- розкоментуй backend у [lesson-8-9/backend.tf](d:\Study\Neoversity\DevOps\lesson-8-9\backend.tf)
-- виконай `terraform init -reconfigure`
-
-## Як перевірити Jenkins
-
-Отримати сервіси:
-
-```powershell
-kubectl get svc -n jenkins
-```
-
-Отримати пароль адміністратора:
-
-```powershell
-terraform output -raw jenkins_admin_password
-```
-
-У Jenkins буде створений job `django-ci`.
-
-Щоб перевірити job:
-
-1. Відкрий Jenkins UI.
-2. Запусти `django-ci` вручну або зроби новий push у репозиторій.
-3. Переконайся, що build проходить етапи:
-   - checkout
-   - kaniko build
-   - push to ECR
-   - update GitOps values
-
-## Як побачити результат в Argo CD
-
-Отримати сервіси:
+2. Отримайте endpoint:
 
 ```powershell
 kubectl get svc -n argocd
 ```
 
-Отримати initial admin password:
+3. Увійдіть під користувачем `admin`.
+4. Відкрийте application `django-app` і перевірте статус `Synced` та `Healthy`.
+
+## Helm chart Django
+
+Власний Helm chart розташований у [charts/django-app](d:/Study/Neoversity/DevOps/lesson-8-9/charts/django-app).
+
+У ньому є:
+
+- `Deployment`
+- `Service`
+- `ConfigMap`
+- `HPA`
+- опціональний `Ingress`
+
+Локальна перевірка chart:
 
 ```powershell
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | %{ [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
+helm lint .\charts\django-app
+helm template django-app .\charts\django-app
 ```
-
-Перевірити application:
-
-```powershell
-kubectl get applications -n argocd
-kubectl describe application django-app -n argocd
-```
-
-Після оновлення `values.yaml` Jenkins-ом Argo CD має автоматично виконати sync і оновити deployment у namespace `django`.
-
-Якщо використовується один GitHub repository, Jenkins і Argo CD працюють з шляхами від кореня repo:
-
-- `lesson-8-9/django`
-- `lesson-8-9/charts/django-app`
-
-## Що саме оновлює Jenkins
-
-Jenkins змінює такі поля у GitOps-репозиторії:
-
-```yaml
-image:
-  repository: <aws-account>.dkr.ecr.<region>.amazonaws.com/lesson-8-9-ecr
-  tag: <build-number>-<short-commit>
-```
-
-Саме цю зміну бачить Argo CD і запускає deploy нової версії.
 
 ## Корисні команди
 
 ```powershell
+aws eks update-kubeconfig --region eu-north-1 --name lesson-8-9-eks
+kubectl get nodes
 kubectl get pods -A
 kubectl get svc -A
 kubectl get applications -n argocd
 kubectl logs -n jenkins deploy/jenkins
-aws ecr describe-images --repository-name lesson-8-9-ecr --region eu-north-1
+```
+
+## Схема CI/CD
+
+```text
+Git push -> Jenkins pipeline -> Kaniko build -> ECR push -> update Helm values in Git -> Argo CD sync -> rollout in EKS
 ```
 
 ## Очистка ресурсів

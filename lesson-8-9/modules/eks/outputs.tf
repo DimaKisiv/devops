@@ -13,6 +13,11 @@ output "cluster_endpoint" {
   value       = aws_eks_cluster.this.endpoint
 }
 
+output "cluster_ca_certificate" {
+  description = "Base64-encoded CA certificate EKS-кластера"
+  value       = aws_eks_cluster.this.certificate_authority[0].data
+}
+
 output "cluster_oidc_issuer" {
   description = "OIDC issuer URL EKS-кластера"
   value       = aws_eks_cluster.this.identity[0].oidc[0].issuer
@@ -21,6 +26,16 @@ output "cluster_oidc_issuer" {
 output "node_role_arn" {
   description = "ARN IAM-ролі для worker nodes"
   value       = aws_iam_role.node_group.arn
+}
+
+output "oidc_provider_arn" {
+  description = "ARN OIDC provider для IRSA"
+  value       = aws_iam_openid_connect_provider.oidc.arn
+}
+
+output "oidc_provider_url" {
+  description = "URL OIDC provider для IRSA"
+  value       = aws_iam_openid_connect_provider.oidc.url
 }
 
 output "node_group_name" {

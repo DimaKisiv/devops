@@ -59,10 +59,6 @@ resource "aws_eks_node_group" "this" {
     role = "general"
   }
 
-  lifecycle {
-    ignore_changes = [scaling_config[0].desired_size]
-  }
-
   depends_on = [
     aws_iam_role_policy_attachment.worker_node_policy,
     aws_iam_role_policy_attachment.cni_policy,

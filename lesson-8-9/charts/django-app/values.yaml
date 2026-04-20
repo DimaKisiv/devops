@@ -1,27 +1,35 @@
 replicaCount: 2
 
 image:
-  repository: 123456789012.dkr.ecr.eu-north-1.amazonaws.com/lesson-8-9-ecr
+  repository: 437670317020.dkr.ecr.eu-north-1.amazonaws.com/lesson-8-9-ecr
   tag: latest
   pullPolicy: IfNotPresent
 
 containerPort: 8000
 
 service:
-  type: LoadBalancer
+  type: ClusterIP
   port: 80
   targetPort: 8000
+
+ingress:
+  enabled: false
+  className: nginx
+  host: django.example.com
+  path: /
+  pathType: Prefix
+  tls: false
 
 config:
   DJANGO_SETTINGS_MODULE: goit.settings
   DEBUG: "False"
   SECRET_KEY: replace-me
-  ALLOWED_HOSTS: "*"
-  POSTGRES_HOST: postgres
+  ALLOWED_HOSTS: "localhost,127.0.0.1"
+  POSTGRES_HOST: db
   POSTGRES_PORT: "5432"
   POSTGRES_USER: django_user
-  POSTGRES_PASSWORD: change_me
   POSTGRES_DB: django_db
+  POSTGRES_PASSWORD: pass9764gd
 
 resources:
   requests:

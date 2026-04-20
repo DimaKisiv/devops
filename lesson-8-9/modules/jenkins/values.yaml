@@ -4,128 +4,42 @@ controller:
     password: ${admin_password}
 
   serviceType: LoadBalancer
-
-  installPlugins:
-    - kubernetes
-    - workflow-aggregator
-    - git
-    - configuration-as-code
-    - job-dsl
-    - credentials
-    - plain-credentials
-    - matrix-auth
+  servicePort: 80
+  targetPort: 8080
 
   resources:
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: "250m"
+      memory: "512Mi"
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: "500m"
+      memory: "1Gi"
 
-  persistence:
-    enabled: true
-    size: 10Gi
+  installPlugins:
+    - kubernetes:latest
+    - workflow-aggregator:latest
+    - git:latest
+    - configuration-as-code:latest
+    - credentials-binding:latest
+    - github:latest
 
   JCasC:
     defaultConfig: true
-    configScripts:
-      jenkins-cloud: |
-        jenkins:
-          numExecutors: 0
-          mode: NORMAL
-          clouds:
-            - kubernetes:
-                name: "kubernetes"
-                namespace: "${namespace}"
-                jenkinsUrl: "http://jenkins.${namespace}.svc.cluster.local:8080"
-                jenkinsTunnel: "jenkins-agent.${namespace}.svc.cluster.local:50000"
-                containerCapStr: "10"
-                templates:
-                  - name: "kaniko"
-                    namespace: "${namespace}"
-                    label: "kaniko"
-                    yamlMergeStrategy: "override"
-                    idleMinutes: 5
-                    yaml: |
-                      apiVersion: v1
-                      kind: Pod
-                      spec:
-                        serviceAccountName: default
-                        containers:
-                          - name: jnlp
-                            image: jenkins/inbound-agent:3273.v4cfe589b_fd83-1
-                            args:
-                              - $(JENKINS_SECRET)
-                              - $(JENKINS_NAME)
-                          - name: git
-                            image: alpine/git:2.45.2
-                            command:
-                              - cat
-                            tty: true
-                          - name: kaniko
-                            image: gcr.io/kaniko-project/executor:v1.23.2-debug
-                            command:
-                              - /busybox/cat
-                            tty: true
 
-      jenkins-credentials: |
-        credentials:
-          system:
-            domainCredentials:
-              - credentials:
-                  - usernamePassword:
-                      scope: GLOBAL
-                      id: "github-credentials"
-                      username: "${github_username}"
-                      password: "${github_token}"
-                      description: "Git credentials for repository checkout and push"
-                  - string:
-                      scope: GLOBAL
-                      id: "github-email"
-                      secret: "${github_email}"
-                      description: "Git author email"
-                  - usernamePassword:
-                      scope: GLOBAL
-                      id: "aws-credentials"
-                      username: "${aws_access_key_id}"
-                      password: "${aws_secret_access_key}"
-                      description: "AWS credentials for ECR push"
+serviceAccount:
+  create: true
+  name: ${service_account_name}
+  annotations:
+    eks.amazonaws.com/role-arn: ${irsa_role_arn}
 
-      jenkins-location: |
-        unclassified:
-          location:
-            url: "http://jenkins.${namespace}.svc.cluster.local:8080/"
-
-      seed-job: |
-        jobs:
-          - script: >
-              pipelineJob('django-ci') {
-                description('Build Django image with Kaniko, push to ECR, update Helm values in GitOps repository')
-                parameters {
-                  stringParam('GITOPS_REPO_URL', '${gitops_repo_url}', 'GitOps repository URL')
-                  stringParam('GIT_BRANCH', '${git_branch}', 'Git branch for commits and Argo CD tracking')
-                  stringParam('APP_CONTEXT_PATH', '${app_context_path}', 'Path to Django Docker context inside application repository')
-                  stringParam('HELM_VALUES_FILE', '${helm_values_file}', 'Path to Helm values.yaml inside GitOps repository')
-                  stringParam('ECR_REPOSITORY', '${ecr_repository_url}', 'ECR repository URL')
-                  stringParam('AWS_REGION', '${aws_region}', 'AWS region for ECR')
-                }
-                definition {
-                  cpsScm {
-                    scm {
-                      git {
-                        remote {
-                          url('${app_repo_url}')
-                          credentials('github-credentials')
-                        }
-                        branches('*/${git_branch}')
-                      }
-                    }
-                    lightweight(true)
-                    scriptPath('lesson-8-9/Jenkinsfile')
-                  }
-                }
-              }
+rbac:
+  create: true
+  readSecrets: true
 
 agent:
-  enabled: false
+  enabled: true
+
+persistence:
+  enabled: true
+  storageClass: gp2
+  size: 10Gi

@@ -7,3 +7,8 @@ output "repository_name" {
   description = "Назва ECR-репозиторію"
   value       = aws_ecr_repository.this.name
 }
+
+output "repository_arn" {
+  description = "ARN ECR-репозиторію"
+  value       = aws_ecr_repository.this.arn
+}

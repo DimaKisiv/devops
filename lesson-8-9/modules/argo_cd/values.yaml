@@ -1,25 +1,33 @@
-configs:
-  params:
-    server.insecure: true
-
 server:
   service:
     type: LoadBalancer
+    servicePortHttps: 443
 
-  extraArgs:
-    - --insecure
+applications:
+  - name: ${app_name}
+    namespace: ${app_namespace}
+    project: default
+    source:
+      repoURL: ${repo_url}
+      path: ${app_path}
+      targetRevision: ${repo_target_revision}
+      helm:
+        valueFiles:
+          - values.yaml
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: ${app_namespace}
+    syncPolicy:
+      automated:
+        prune: true
+        selfHeal: true
 
-controller:
-  replicas: 1
+repositories:
+  - name: ${app_name}
+    url: ${repo_url}
+    username: ${repo_username}
+    password: ${repo_password}
 
-repoServer:
-  replicas: 1
-
-applicationSet:
-  replicas: 1
-
-redis:
-  enabled: true
-
-crds:
-  install: true
+repoConfig:
+  insecure: "false"
+  enableLfs: "true"

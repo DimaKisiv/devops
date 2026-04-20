@@ -1,46 +1,61 @@
-variable "cluster_name" {
-  description = "EKS cluster name"
+variable "name" {
+  description = "Назва Helm-релізу Argo CD"
   type        = string
-}
-
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
+  default     = "argo-cd"
 }
 
 variable "namespace" {
-  description = "Argo CD namespace"
+  description = "Kubernetes namespace для Argo CD"
   type        = string
+  default     = "argocd"
 }
 
 variable "chart_version" {
-  description = "Argo CD Helm chart version"
+  description = "Версія Helm-чарта Argo CD"
   type        = string
+  default     = "5.46.4"
 }
 
-variable "gitops_repo_url" {
-  description = "GitOps repository URL"
+variable "app_name" {
+  description = "Назва Argo CD Application"
   type        = string
+  default     = "django-app"
 }
 
-variable "git_branch" {
-  description = "Git branch tracked by Argo CD"
+variable "app_namespace" {
+  description = "Namespace для деплою Django-застосунку"
   type        = string
+  default     = "default"
 }
 
-variable "applications" {
-  description = "Applications managed by Argo CD"
-  type = list(object({
-    name               = string
-    project            = string
-    namespace          = string
-    repo_url           = string
-    path               = string
-    target_revision    = string
-    destination_server = string
-    automated          = bool
-    prune              = bool
-    self_heal          = bool
-    create_namespace   = bool
-  }))
+variable "repo_url" {
+  description = "Git-репозиторій із Helm chart для Argo CD"
+  type        = string
+  default     = "https://github.com/DimaKisiv/DevOps.git"
+}
+
+variable "repo_target_revision" {
+  description = "Гілка або тег Git-репозиторію"
+  type        = string
+  default     = "lesson-8-9"
+}
+
+variable "app_path" {
+  description = "Шлях до Helm-чарта всередині репозиторію"
+  type        = string
+  default     = "charts/django-app"
+}
+
+variable "repo_username" {
+  description = "Username для приватного Git-репозиторію"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "repo_password" {
+  description = "Token або password для приватного Git-репозиторію"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
