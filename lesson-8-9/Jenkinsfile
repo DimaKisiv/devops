@@ -72,17 +72,17 @@ spec:
               cd gitops-repo
 
               git checkout "${GITOPS_BRANCH}"
-              sed -i "s|^  tag: .*|  tag: ${IMAGE_TAG}|" charts/django-app/values.yaml
+              sed -i "s|^  tag: .*|  tag: ${IMAGE_TAG}|" lesson-8-9/charts/django-app/values.yaml
 
               git config user.email "${COMMIT_EMAIL}"
               git config user.name "${COMMIT_NAME}"
 
-              if git diff --quiet charts/django-app/values.yaml; then
+              if git diff --quiet lesson-8-9/charts/django-app/values.yaml; then
                 echo "Helm values already use image tag ${IMAGE_TAG}"
                 exit 0
               fi
 
-              git add charts/django-app/values.yaml
+              git add lesson-8-9/charts/django-app/values.yaml
               git commit -m "chore: update image tag to ${IMAGE_TAG} [skip ci]"
               git push origin "${GITOPS_BRANCH}"
             '''
