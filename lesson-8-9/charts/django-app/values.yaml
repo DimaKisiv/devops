@@ -24,7 +24,7 @@ config:
   DJANGO_SETTINGS_MODULE: goit.settings
   DEBUG: "False"
   SECRET_KEY: replace-me
-  ALLOWED_HOSTS: "localhost,127.0.0.1"
+  ALLOWED_HOSTS: "*"
   POSTGRES_HOST: db
   POSTGRES_PORT: "5432"
   POSTGRES_USER: django_user

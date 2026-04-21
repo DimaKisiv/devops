@@ -43,7 +43,7 @@ variable "repo_target_revision" {
 variable "app_path" {
   description = "Шлях до Helm-чарта всередині репозиторію"
   type        = string
-  default     = "charts/django-app"
+  default     = "lesson-8-9/charts/django-app"
 }
 
 variable "repo_username" {
