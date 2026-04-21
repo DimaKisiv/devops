@@ -3,6 +3,9 @@ controller:
     username: ${admin_username}
     password: ${admin_password}
 
+  image:
+    tag: "2.492.1"
+
   serviceType: LoadBalancer
   servicePort: 80
   targetPort: 8080

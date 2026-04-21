@@ -52,7 +52,7 @@ module "eks" {
   cluster_subnet_ids  = concat(module.vpc.public_subnets, module.vpc.private_subnets)
   node_subnet_ids     = module.vpc.private_subnets
   node_group_name     = "lesson-8-9-workers"
-  node_instance_types = ["t3.micro"]
+  node_instance_types = ["t3.small"]
   desired_size        = 4
   min_size            = 2
   max_size            = 5

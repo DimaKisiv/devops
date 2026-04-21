@@ -27,10 +27,6 @@ spec:
     }
   }
 
-  options {
-    timestamps()
-  }
-
   environment {
     AWS_REGION       = 'eu-north-1'
     ECR_REGISTRY     = '437670317020.dkr.ecr.eu-north-1.amazonaws.com'
