@@ -46,3 +46,4 @@ postgres_data/
 *.tfstate.backup
 
 *.tfvars
+lesson-8-9/.terraform.tfstate.lock.info
