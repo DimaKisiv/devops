@@ -1,0 +1,4 @@
+# Custom Grafana values (can be extended as needed)
+adminPassword: admin123
+service:
+  type: LoadBalancer

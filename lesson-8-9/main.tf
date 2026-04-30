@@ -1,3 +1,12 @@
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_ca_certificate)
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", local.aws_region]
+  }
+}
 provider "aws" {
   region = local.aws_region
 }
@@ -111,6 +120,16 @@ module "rds" {
   tags = {
     Environment = "dev"
     Project     = "lesson-8-9"
+  }
+}
+
+# Monitoring (Prometheus & Grafana)
+module "monitoring" {
+  source    = "./modules/monitoring"
+  namespace = "monitoring"
+
+  providers = {
+    kubernetes = kubernetes
   }
 }
 
