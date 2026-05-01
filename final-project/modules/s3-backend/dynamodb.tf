@@ -11,7 +11,7 @@ resource "aws_dynamodb_table" "terraform_locks" {
 
   tags = {
     Name        = "Terraform Lock Table"
-    Environment = "final_project"
+    Environment = "final-project"
   }
 }
 

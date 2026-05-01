@@ -1,4 +1,4 @@
-# final_project
+# final-project
 
 Домашнє завдання з повним CI/CD-процесом для Django-застосунку на базі Terraform, EKS, ECR, Helm, Jenkins і Argo CD.
 
@@ -16,14 +16,14 @@
 
 1. Terraform створює `VPC`, `EKS`, `ECR`, `OIDC/IRSA`, `Jenkins` і `Argo CD`.
 2. Jenkins запускає pipeline в Kubernetes pod.
-3. Kaniko збирає Docker-образ із [django/Dockerfile](d:/Study/Neoversity/DevOps/final_project/django/Dockerfile) і пушить його в ECR.
-4. Jenkins оновлює тег образу в [charts/django-app/values.yaml](d:/Study/Neoversity/DevOps/final_project/charts/django-app/values.yaml) і пушить зміни в Git.
+3. Kaniko збирає Docker-образ із [django/Dockerfile](d:/Study/Neoversity/DevOps/final-project/django/Dockerfile) і пушить його в ECR.
+4. Jenkins оновлює тег образу в [charts/django-app/values.yaml](d:/Study/Neoversity/DevOps/final-project/charts/django-app/values.yaml) і пушить зміни в Git.
 5. Argo CD відстежує Git-репозиторій і автоматично синхронізує застосунок у кластері.
 
 ## Структура проєкту
 
 ```text
-final_project/
+final-project/
 ├── backend.tf
 ├── main.tf
 ├── outputs.tf
@@ -72,10 +72,10 @@ aws configure
 
 Перед `terraform apply` замініть плейсхолдери:
 
-- `repo_url` у [modules/argo_cd/variables.tf](d:/Study/Neoversity/DevOps/final_project/modules/argo_cd/variables.tf) на ваш GitHub-репозиторій із гілкою `final_project`
-- `repo_target_revision` у [modules/argo_cd/variables.tf](d:/Study/Neoversity/DevOps/final_project/modules/argo_cd/variables.tf) на потрібну гілку
-- `image.repository` у [charts/django-app/values.yaml](d:/Study/Neoversity/DevOps/final_project/charts/django-app/values.yaml) на фактичний `ecr_repository_url` із Terraform outputs
-- `ECR_REGISTRY` і `GITOPS_REPOSITORY` у [Jenkinsfile](d:/Study/Neoversity/DevOps/final_project/Jenkinsfile) на ваші значення
+- `repo_url` у [modules/argo_cd/variables.tf](d:/Study/Neoversity/DevOps/final-project/modules/argo_cd/variables.tf) на ваш GitHub-репозиторій із гілкою `final-project`
+- `repo_target_revision` у [modules/argo_cd/variables.tf](d:/Study/Neoversity/DevOps/final-project/modules/argo_cd/variables.tf) на потрібну гілку
+- `image.repository` у [charts/django-app/values.yaml](d:/Study/Neoversity/DevOps/final-project/charts/django-app/values.yaml) на фактичний `ecr_repository_url` із Terraform outputs
+- `ECR_REGISTRY` і `GITOPS_REPOSITORY` у [Jenkinsfile](d:/Study/Neoversity/DevOps/final-project/Jenkinsfile) на ваші значення
 
 ## Як застосувати Terraform
 
@@ -96,7 +96,7 @@ terraform apply
 
 ## Jenkins
 
-Pipeline описаний у [Jenkinsfile](d:/Study/Neoversity/DevOps/final_project/Jenkinsfile).
+Pipeline описаний у [Jenkinsfile](d:/Study/Neoversity/DevOps/final-project/Jenkinsfile).
 
 Що робить pipeline:
 
@@ -116,18 +116,18 @@ Pipeline описаний у [Jenkinsfile](d:/Study/Neoversity/DevOps/final_proj
 
 1. Отримайте зовнішній endpoint Jenkins через `kubectl get svc -n jenkins`.
 2. Увійдіть із логіном `admin` і паролем із Terraform output `jenkins_admin_password`.
-3. Створіть pipeline job, що використовує [Jenkinsfile](d:/Study/Neoversity/DevOps/final_project/Jenkinsfile).
+3. Створіть pipeline job, що використовує [Jenkinsfile](d:/Study/Neoversity/DevOps/final-project/Jenkinsfile).
 4. Запустіть build і перевірте, що з’явився новий тег у `ECR` і коміт у Git.
 
 ## Argo CD
 
-Argo CD встановлюється з модуля [modules/argo_cd](d:/Study/Neoversity/DevOps/final_project/modules/argo_cd).
+Argo CD встановлюється з модуля [modules/argo_cd](d:/Study/Neoversity/DevOps/final-project/modules/argo_cd).
 
 Argo CD Application створюється локальним chart-ом у:
 
-- [modules/argo_cd/charts/Chart.yaml](d:/Study/Neoversity/DevOps/final_project/modules/argo_cd/charts/Chart.yaml)
-- [modules/argo_cd/charts/templates/application.yaml](d:/Study/Neoversity/DevOps/final_project/modules/argo_cd/charts/templates/application.yaml)
-- [modules/argo_cd/charts/templates/repository.yaml](d:/Study/Neoversity/DevOps/final_project/modules/argo_cd/charts/templates/repository.yaml)
+- [modules/argo_cd/charts/Chart.yaml](d:/Study/Neoversity/DevOps/final-project/modules/argo_cd/charts/Chart.yaml)
+- [modules/argo_cd/charts/templates/application.yaml](d:/Study/Neoversity/DevOps/final-project/modules/argo_cd/charts/templates/application.yaml)
+- [modules/argo_cd/charts/templates/repository.yaml](d:/Study/Neoversity/DevOps/final-project/modules/argo_cd/charts/templates/repository.yaml)
 
 Як побачити результат в Argo CD:
 
@@ -148,7 +148,7 @@ kubectl get svc -n argocd
 
 ## Helm chart Django
 
-Власний Helm chart розташований у [charts/django-app](d:/Study/Neoversity/DevOps/final_project/charts/django-app).
+Власний Helm chart розташований у [charts/django-app](d:/Study/Neoversity/DevOps/final-project/charts/django-app).
 
 У ньому є:
 
@@ -168,7 +168,7 @@ helm template django-app .\charts\django-app
 ## Корисні команди
 
 ```powershell
-aws eks update-kubeconfig --region eu-north-1 --name final_project-eks
+aws eks update-kubeconfig --region eu-north-1 --name final-project-eks
 kubectl get nodes
 kubectl get pods -A
 kubectl get svc -A

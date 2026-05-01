@@ -25,13 +25,13 @@ provider "helm" {
 
 locals {
   aws_region   = "eu-north-1"
-  cluster_name = "final_project-eks"
+  cluster_name = "final-project-eks"
 }
 
 # Підключаємо модуль для S3 та DynamoDB
 module "s3_backend" {
   source      = "./modules/s3-backend"               # Шлях до модуля
-  bucket_name = "terraform-state-bucket-dk-final_project" # Ім'я S3-бакета
+  bucket_name = "terraform-state-bucket-dk-final-project" # Ім'я S3-бакета
   table_name  = "terraform-locks"                    # Ім'я DynamoDB
 }
 
@@ -49,7 +49,7 @@ module "vpc" {
 # Підключаємо модуль ECR
 module "ecr" {
   source       = "./modules/ecr"
-  ecr_name     = "final_project-ecr"
+  ecr_name     = "final-project-ecr"
   scan_on_push = true
 }
 
@@ -60,7 +60,7 @@ module "eks" {
   cluster_version     = "1.30"
   cluster_subnet_ids  = concat(module.vpc.public_subnets, module.vpc.private_subnets)
   node_subnet_ids     = module.vpc.private_subnets
-  node_group_name     = "final_project-workers"
+  node_group_name     = "final-project-workers"
   node_instance_types = ["t3.small"]
   desired_size        = 4
   min_size            = 2
@@ -91,7 +91,7 @@ module "argo_cd" {
 module "rds" {
   source = "./modules/rds"
 
-  name                       = "final_project-db"
+  name                       = "final-project-db"
   use_aurora                 = false
   aurora_instance_count      = 2
 
@@ -119,7 +119,7 @@ module "rds" {
 
   tags = {
     Environment = "dev"
-    Project     = "final_project"
+    Project     = "final-project"
   }
 }
 
