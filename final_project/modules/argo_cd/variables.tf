@@ -37,13 +37,13 @@ variable "repo_url" {
 variable "repo_target_revision" {
   description = "Гілка або тег Git-репозиторію"
   type        = string
-  default     = "lesson-8-9"
+  default     = "final_project"
 }
 
 variable "app_path" {
   description = "Шлях до Helm-чарта всередині репозиторію"
   type        = string
-  default     = "lesson-8-9/charts/django-app"
+  default     = "final_project/charts/django-app"
 }
 
 variable "repo_username" {

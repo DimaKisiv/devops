@@ -30,10 +30,10 @@ spec:
   environment {
     AWS_REGION       = 'eu-north-1'
     ECR_REGISTRY     = '437670317020.dkr.ecr.eu-north-1.amazonaws.com'
-    IMAGE_NAME       = 'lesson-8-9-ecr'
+    IMAGE_NAME       = 'final_project-ecr'
     IMAGE_TAG        = "v1.0.${BUILD_NUMBER}"
     GITOPS_REPOSITORY = 'https://github.com/DimaKisiv/devops.git'
-    GITOPS_BRANCH    = 'lesson-8-9'
+    GITOPS_BRANCH    = 'final_project'
     COMMIT_EMAIL     = 'jenkins@localhost'
     COMMIT_NAME      = 'jenkins'
   }
@@ -52,8 +52,8 @@ spec:
         container('kaniko') {
           sh '''
             /kaniko/executor \
-              --context "${WORKSPACE}/lesson-8-9/django" \
-              --dockerfile "${WORKSPACE}/lesson-8-9/django/Dockerfile" \
+              --context "${WORKSPACE}/final_project/django" \
+              --dockerfile "${WORKSPACE}/final_project/django/Dockerfile" \
               --destination="${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" \
               --cache=true
           '''
@@ -72,17 +72,17 @@ spec:
               cd gitops-repo
 
               git checkout "${GITOPS_BRANCH}"
-              sed -i "s|^  tag: .*|  tag: ${IMAGE_TAG}|" lesson-8-9/charts/django-app/values.yaml
+              sed -i "s|^  tag: .*|  tag: ${IMAGE_TAG}|" final_project/charts/django-app/values.yaml
 
               git config user.email "${COMMIT_EMAIL}"
               git config user.name "${COMMIT_NAME}"
 
-              if git diff --quiet lesson-8-9/charts/django-app/values.yaml; then
+              if git diff --quiet final_project/charts/django-app/values.yaml; then
                 echo "Helm values already use image tag ${IMAGE_TAG}"
                 exit 0
               fi
 
-              git add lesson-8-9/charts/django-app/values.yaml
+              git add final_project/charts/django-app/values.yaml
               git commit -m "chore: update image tag to ${IMAGE_TAG} [skip ci]"
               git push origin "${GITOPS_BRANCH}"
             '''
