@@ -8,17 +8,19 @@
 - Додавання `AWS EBS CSI Driver` для PVC у EKS
 - Встановлення `Jenkins` через `Helm` із Terraform
 - Встановлення `Argo CD` через `Helm` із Terraform
+- Встановлення моніторингу: `Prometheus` і `Grafana` через Helm/Terraform
 - Власний Helm chart для Django-застосунку
 - Jenkins pipeline через Kubernetes agent (`Kaniko + Git`)
 - GitOps-ланцюг `Jenkins -> ECR -> Helm values -> Argo CD sync`
 
 ## Архітектура
 
-1. Terraform створює `VPC`, `EKS`, `ECR`, `OIDC/IRSA`, `Jenkins` і `Argo CD`.
+1. Terraform створює `VPC`, `EKS`, `ECR`, `OIDC/IRSA`, `Jenkins`, `Argo CD`, `Prometheus` і `Grafana`.
 2. Jenkins запускає pipeline в Kubernetes pod.
-3. Kaniko збирає Docker-образ із [django/Dockerfile](d:/Study/Neoversity/DevOps/final-project/django/Dockerfile) і пушить його в ECR.
-4. Jenkins оновлює тег образу в [charts/django-app/values.yaml](d:/Study/Neoversity/DevOps/final-project/charts/django-app/values.yaml) і пушить зміни в Git.
+3. Kaniko збирає Docker-образ із [django/Dockerfile](django/Dockerfile) і пушить його в ECR.
+4. Jenkins оновлює тег образу в [charts/django-app/values.yaml](charts/django-app/values.yaml) і пушить зміни в Git.
 5. Argo CD відстежує Git-репозиторій і автоматично синхронізує застосунок у кластері.
+6. Prometheus збирає метрики з Kubernetes, Grafana візуалізує їх через дашборди.
 
 ## Структура проєкту
 
@@ -48,6 +50,7 @@ final-project/
     ├── ecr/
     ├── eks/
     ├── jenkins/
+    ├── monitoring/
     ├── s3-backend/
     └── vpc/
 ```
@@ -93,6 +96,53 @@ terraform apply
 - `ECR` repository
 - `Jenkins` у namespace `jenkins`
 - `Argo CD` у namespace `argocd`
+- `Prometheus` і `Grafana` у namespace `monitoring`
+
+## Моніторинг: Prometheus і Grafana
+
+Моніторинг розгортається автоматично через Terraform/Helm у namespace `monitoring`.
+
+### Доступ до Grafana
+
+1. Отримайте пароль адміністратора (якщо не змінювали, за замовчуванням admin123 або з секрету):
+
+```powershell
+kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | % { [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+```
+
+2. Отримайте адресу сервісу Grafana:
+
+```powershell
+kubectl get svc -n monitoring
+```
+
+3. Відкрийте Grafana у браузері (наприклад, через port-forward):
+
+```powershell
+kubectl port-forward svc/grafana 3000:80 -n monitoring
+```
+
+Відкрийте http://localhost:3000
+
+### Додавання Prometheus як data source у Grafana
+
+- Через UI: Connections → Data sources → Add data source → Prometheus
+- URL для підключення: `http://prometheus-server.monitoring.svc.cluster.local`
+- Натисніть Save & Test
+
+- (Опціонально) Для автоматизації додайте data source у `grafana-values.yaml`:
+
+```yaml
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc.cluster.local
+        isDefault: true
+```
 
 ## Jenkins
 
@@ -179,7 +229,7 @@ kubectl logs -n jenkins deploy/jenkins
 ## Схема CI/CD
 
 ```text
-Git push -> Jenkins pipeline -> Kaniko build -> ECR push -> update Helm values in Git -> Argo CD sync -> rollout in EKS
+Git push -> Jenkins pipeline -> Kaniko build -> ECR push -> update Helm values in Git -> Argo CD sync -> rollout in EKS -> Моніторинг у Grafana
 ```
 
 ## Очистка ресурсів
